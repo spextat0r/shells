@@ -641,7 +641,7 @@ def main():
                 continue
             except BaseException as e:
                 print(e)
-                print("Howed you fuck it up?")
+                print("Howed you get here?")
                 continue
 
             # if we made it here were in the shell
@@ -684,7 +684,7 @@ def main():
                     break
                 except BaseException as e:
                     print(str(e))
-                    print("Bruh u a dummy")
+                    print("Bruh :/")
                     continue
 
         elif (command[0] == "clients" and server_status == True):
