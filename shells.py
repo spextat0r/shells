@@ -1,6 +1,7 @@
 from time import sleep
 import netifaces as ni
 import threading
+import readline
 import socket
 import os, sys
 
